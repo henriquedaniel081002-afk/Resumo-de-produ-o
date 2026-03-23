@@ -4,7 +4,7 @@ export interface ProductionData {
   Data: string; // YYYY-MM-DD
   Cod: string;
   Desc: string;
-  Mp: string;
+  Mp: number;
   Qtde: number;
   Turno: TurnoType;
 }
@@ -12,6 +12,8 @@ export interface ProductionData {
 export interface KPIStats {
   total1st: number;
   total2nd: number;
+  totalMp1st: number;
+  totalMp2nd: number;
   diffQty: number;
   diffPercent: number;
 }
@@ -28,6 +30,14 @@ export interface ChartDataDaily {
 }
 
 export interface ChartDataProduct {
+  cod: string;
+  desc: string;
+  value: number;
+  turno1: number;
+  turno2: number;
+}
+
+export interface ChartDataProductMp {
   cod: string;
   desc: string;
   value: number;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { MOCK_DATA } from './constants';
-import { FilterState, KPIStats, ChartDataTurno, ChartDataDaily, ChartDataProduct, ProductionData } from './types';
+import { FilterState, KPIStats, ChartDataTurno, ChartDataDaily, ChartDataProduct, ChartDataProductMp, ProductionData } from './types';
 import KPICards from './components/KPICards';
 import Filters from './components/Filters';
 import Charts from './components/Charts';
@@ -30,18 +30,19 @@ const App: React.FC = () => {
     const Data = String(row.Data ?? '').trim();
     const Cod = String(row.Cod ?? '').trim();
     const Desc = String(row.Desc ?? '').trim();
-    const Mp = String(row.Mp ?? '').trim();
+    const MpNum = Number(row.Mp);
     const QtdeNum = Number(row.Qtde);
     const Turno = String(row.Turno ?? '').trim();
 
     if (!Data || !Cod || !Desc || !Number.isFinite(QtdeNum) || QtdeNum < 0) return null;
+    if (!Number.isFinite(MpNum) || MpNum < 0) return null;
     if (Turno !== '1º Turno' && Turno !== '2º Turno') return null;
 
     return {
       Data,
       Cod,
       Desc,
-      Mp,
+      Mp: MpNum,
       Qtde: QtdeNum,
       Turno: Turno as ProductionData['Turno'],
     };
@@ -98,16 +99,24 @@ const App: React.FC = () => {
   const kpiStats: KPIStats = useMemo(() => {
     let total1st = 0;
     let total2nd = 0;
+    let totalMp1st = 0;
+    let totalMp2nd = 0;
 
     filteredData.forEach(item => {
-      if (item.Turno === '1º Turno') total1st += item.Qtde;
-      if (item.Turno === '2º Turno') total2nd += item.Qtde;
+      if (item.Turno === '1º Turno') {
+        total1st += item.Qtde;
+        totalMp1st += item.Mp;
+      }
+      if (item.Turno === '2º Turno') {
+        total2nd += item.Qtde;
+        totalMp2nd += item.Mp;
+      }
     });
 
     const diffQty = total1st - total2nd;
     const diffPercent = total2nd === 0 ? 0 : (diffQty / total2nd) * 100;
 
-    return { total1st, total2nd, diffQty, diffPercent };
+    return { total1st, total2nd, totalMp1st, totalMp2nd, diffQty, diffPercent };
   }, [filteredData]);
 
   const chartDataTurno: ChartDataTurno[] = useMemo(() => {
@@ -170,6 +179,33 @@ const App: React.FC = () => {
       .slice(0, 10);
   }, [filteredData]);
 
+  const chartDataProductMp: ChartDataProductMp[] = useMemo(() => {
+    const prodMap: Record<string, { cod: string; desc: string; value: number; turno1: number; turno2: number }> = {};
+
+    filteredData.forEach(item => {
+      const key = item.Cod;
+
+      if (!prodMap[key]) {
+        prodMap[key] = {
+          cod: item.Cod,
+          desc: item.Desc,
+          value: 0,
+          turno1: 0,
+          turno2: 0,
+        };
+      }
+
+      prodMap[key].value += item.Mp;
+
+      if (item.Turno === '1º Turno') prodMap[key].turno1 += item.Mp;
+      else prodMap[key].turno2 += item.Mp;
+    });
+
+    return Object.values(prodMap)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [filteredData]);
+
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <header className="bg-surface border-b border-border py-4 px-6 shadow-lg z-30">
@@ -205,7 +241,12 @@ const App: React.FC = () => {
 
         <Filters filters={filters} setFilters={setFilters} />
         <KPICards stats={kpiStats} />
-        <Charts dataTurno={chartDataTurno} dataDaily={chartDataDaily} dataProduct={chartDataProduct} />
+        <Charts
+          dataTurno={chartDataTurno}
+          dataDaily={chartDataDaily}
+          dataProduct={chartDataProduct}
+          dataProductMp={chartDataProductMp}
+        />
       </main>
 
       <footer className="border-t border-border py-6 mt-6 bg-surface">
