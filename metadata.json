@@ -1,0 +1,5 @@
+{
+  "name": "Resumo de Produção - MMA",
+  "description": "A high-performance, dark-themed production dashboard visualizing manufacturing data with KPIs, charts, and detailed analytics using React, Tailwind CSS, and Recharts.",
+  "requestFramePermissions": []
+}
